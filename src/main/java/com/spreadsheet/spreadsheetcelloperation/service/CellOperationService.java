@@ -3,12 +3,12 @@ package com.spreadsheet.spreadsheetcelloperation.service;
 import com.fathzer.soft.javaluator.DoubleEvaluator;
 import com.spreadsheet.spreadsheetcelloperation.model.Cell;
 import com.spreadsheet.spreadsheetcelloperation.repository.CellRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -26,7 +26,17 @@ public class CellOperationService implements CellOperation {
         this.cellRepository = cellRepository;
     }
 
+    /**
+     * Sets the value of a cell with the specified ID.
+     * Create new cells for the given cell as the dependentCells.
+     * Update the data in the given cell if the cell exists.
+     *
+     * @param cellId The ID of the cell.
+     * @param value  The new value of the cell.
+     * @throws NoSuchElementException if the cell ID is invalid.
+     */
     @Override
+    @Transactional
     public void setCellValue(String cellId, Object value) {
 
         String data = value.toString();
@@ -52,8 +62,20 @@ public class CellOperationService implements CellOperation {
         logger.info("Existing cell updated, Cell Id: "+ cell.getCellId());
     }
 
+    /**
+     * Creates a list dependent cells for a given cell based on the expression data.
+     *
+     * @param cellId The ID of the cell for which dependencies are being created.
+     * @param data   The expression data containing cell references.
+     * @return A list of cells that the given cell depends on.
+     * @throws IllegalStateException for cells referring to the same cell.
+     * @throws NoSuchElementException for invalid cellId
+     */
     private List<Cell> createDependencyListFromExpression(String cellId, String data) {
 
+        if(!cellId.matches(CELL_ID_PATTERN)) {
+            throw new NoSuchElementException("Invalid Cell Id");
+        }
         List<Cell> dependencyList = new ArrayList<>();
         String extractDependency = data.substring(1);
         String[] tokens = extractDependency.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
@@ -62,7 +84,7 @@ public class CellOperationService implements CellOperation {
             Matcher cellIdMatcher = cellIdPattern.matcher(token);
             if (cellIdMatcher.matches()) {
                 if(cellId.equals(token.toUpperCase())){
-                    throw new IllegalStateException("Reference Error - Refering to Same element");
+                    throw new IllegalStateException("Reference Error - Referring to Same element");
                 }
                 Cell cell = cellRepository.findById(token.toUpperCase()).orElseGet(
                         () -> {
