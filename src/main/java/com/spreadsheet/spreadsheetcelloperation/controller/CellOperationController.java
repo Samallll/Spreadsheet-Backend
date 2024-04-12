@@ -23,4 +23,10 @@ public class CellOperationController {
         cellOperationService.setCellValue(cellId,value);
         return ResponseEntity.ok("Successfull");
     }
+
+    @GetMapping("/{cellId}")
+    public ResponseEntity<String> getValueFromCell(@PathVariable("cellId") String cellId){
+
+        return ResponseEntity.ok(cellOperationService.getCellValue(cellId));
+    }
 }

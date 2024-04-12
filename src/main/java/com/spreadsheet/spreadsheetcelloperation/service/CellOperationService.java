@@ -3,12 +3,11 @@ package com.spreadsheet.spreadsheetcelloperation.service;
 import com.fathzer.soft.javaluator.DoubleEvaluator;
 import com.spreadsheet.spreadsheetcelloperation.model.Cell;
 import com.spreadsheet.spreadsheetcelloperation.repository.CellRepository;
+import com.spreadsheet.spreadsheetcelloperation.utils.DependencyUtil;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +44,7 @@ public class CellOperationService implements CellOperation {
             throw new NoSuchElementException("Invalid Cell Id");
         }
         if(data.startsWith("=")){
-            dependencyList = createDependencyListFromExpression(cellId, data);
+            dependencyList = createDependencyListFromExpression(cellId, data.substring(1));
         }
 
         Cell cell = cellRepository.findById(cellId)
@@ -77,8 +76,7 @@ public class CellOperationService implements CellOperation {
             throw new NoSuchElementException("Invalid Cell Id");
         }
         List<Cell> dependencyList = new ArrayList<>();
-        String extractDependency = data.substring(1);
-        String[] tokens = extractDependency.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
+        String[] tokens = data.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
         Pattern cellIdPattern = Pattern.compile(CELL_ID_PATTERN);
         for (String token : tokens) {
             Matcher cellIdMatcher = cellIdPattern.matcher(token);
@@ -98,20 +96,67 @@ public class CellOperationService implements CellOperation {
         return dependencyList;
     }
 
-    private String evaluateEquation(String data) {
-        // TODO -- evaluate the equation and return the actual final data
-        String expression = data.substring(1);
+    @Override
+    public String getCellValue(String cellId) {
+
+        if(!cellId.matches(CELL_ID_PATTERN)) {
+            throw new NoSuchElementException("Invalid Cell Id");
+        }
+        Cell cell = cellRepository.findById(cellId)
+                .orElseThrow(() -> new NoSuchElementException("Cell Id does not exist"));
+        if(isCircularDependent(cell)){
+            throw new IllegalStateException("Circular Dependency Found");
+        }
+        String result;
+        if(cell.getData().startsWith("=")){
+            result = evaluateExpression(cell.getData().substring(1));
+            result = calculateExpressionValue(result);
+        }
+        else{
+            result = cell.getData();
+        }
+        return result;
+    }
+
+    public String evaluateExpression(String data) {
+        String[] tokens = data.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
+        Pattern cellIdPattern = Pattern.compile(CELL_ID_PATTERN);
+        StringBuilder finalExpression = new StringBuilder();
+
+        for (String token : tokens) {
+            Matcher cellIdMatcher = cellIdPattern.matcher(token);
+            if (cellIdMatcher.matches()) {
+                Cell cell = cellRepository.findById(token)
+                        .orElseThrow(() -> new NoSuchElementException("Reference Error - No such element"));
+
+                String referenceExpression = cell.getData() != null ? evaluateExpression(cell.getData().replaceFirst("^=", "")) : "0.00";
+                finalExpression.append(referenceExpression);
+            } else {
+                finalExpression.append(token);
+            }
+        }
+        return finalExpression.toString();
+    }
+
+    private String calculateExpressionValue(String result) {
 
         DoubleEvaluator evaluator = new DoubleEvaluator();
-        Double result = evaluator.evaluate(expression);
-        System.out.println(result);
-
-        return expression;
+        Double answer = evaluator.evaluate(result);
+        return answer.toString();
     }
 
+    private Boolean isCircularDependent(Cell cell) {
 
-    @Override
-    public int getCellValue(String cellId) {
-        return 0;
+        List<Cell> dependentList = cell.getDependentCells();
+        Set<Cell> visited = new HashSet<>();
+        Set<Cell> inPath = new HashSet<>();
+
+        for (Cell cell1 : dependentList) {
+            if (DependencyUtil.hasCircularDependency(cell1, visited, inPath)) {
+                return true;
+            }
+        }
+        return false;
     }
+
 }
