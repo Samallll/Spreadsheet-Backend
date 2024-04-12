@@ -28,6 +28,11 @@ public class Cell {
         this.dependentCells = new ArrayList<>();
     }
 
+    public Cell(String cellId){
+        this.cellId = cellId;
+        this.dependentCells = new ArrayList<>();
+    }
+
     public String getCellId() {
         return cellId;
     }
