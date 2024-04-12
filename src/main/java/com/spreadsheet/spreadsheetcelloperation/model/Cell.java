@@ -18,6 +18,10 @@ public class Cell {
     @ManyToMany
     List<Cell> dependentCells;
 
+    public Cell(){
+
+    }
+
     public Cell(String cellId, String data) {
         this.cellId = cellId;
         this.data = data;
