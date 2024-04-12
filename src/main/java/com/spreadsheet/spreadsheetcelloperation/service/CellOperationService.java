@@ -26,8 +26,8 @@ public class CellOperationService implements CellOperation {
     }
 
     /**
-     * Sets the value of a cell with the specified ID.
-     * Create new cells for the given cell as the dependentCells.
+     * Sets the value of a cell with the specified ID,
+     * Create new cells for the given cell as the dependentCells and
      * Update the data in the given cell if the cell exists.
      *
      * @param cellId The ID of the cell.
@@ -62,7 +62,7 @@ public class CellOperationService implements CellOperation {
     }
 
     /**
-     * Creates a list dependent cells for a given cell based on the expression data.
+     * Creates a list of dependent cells for a given cell based on the expression.
      *
      * @param cellId The ID of the cell for which dependencies are being created.
      * @param data   The expression data containing cell references.
@@ -118,6 +118,12 @@ public class CellOperationService implements CellOperation {
         return result;
     }
 
+    /**
+     * Converts an expression with references to an executable expression with original values.
+     * @param data The expression to be changed into the final executable expression
+     * @throws NoSuchElementException cell Id represents which doesn't exist
+     * @return final expression which can be evaluated by an expression evaluator.
+     */
     public String evaluateExpression(String data) {
         String[] tokens = data.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
         Pattern cellIdPattern = Pattern.compile(CELL_ID_PATTERN);
@@ -138,10 +144,10 @@ public class CellOperationService implements CellOperation {
         return finalExpression.toString();
     }
 
-    private String calculateExpressionValue(String result) {
+    private String calculateExpressionValue(String expression) {
 
         DoubleEvaluator evaluator = new DoubleEvaluator();
-        Double answer = evaluator.evaluate(result);
+        Double answer = evaluator.evaluate(expression);
         return answer.toString();
     }
 
