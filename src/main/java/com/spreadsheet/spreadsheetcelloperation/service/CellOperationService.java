@@ -141,6 +141,7 @@ public class CellOperationService implements CellOperation {
                 finalExpression.append(token);
             }
         }
+        logger.info("Final Expression Generated: "+ finalExpression.toString());
         return finalExpression.toString();
     }
 
@@ -159,6 +160,7 @@ public class CellOperationService implements CellOperation {
 
         for (Cell cell1 : dependentList) {
             if (DependencyUtil.hasCircularDependency(cell1, visited, inPath)) {
+                logger.info("Circular Dependency Found");
                 return true;
             }
         }
