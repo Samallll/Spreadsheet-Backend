@@ -162,6 +162,9 @@ public class CellOperationService implements CellOperation {
 
     Boolean isCircularDependent(Cell cell) {
 
+        if(cell == null){
+            return null;
+        }
         List<Cell> dependentList = cell.getDependentCells();
         Set<Cell> visited = new HashSet<>();
         Set<Cell> inPath = new HashSet<>();
