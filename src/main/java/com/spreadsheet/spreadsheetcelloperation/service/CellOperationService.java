@@ -131,21 +131,30 @@ public class CellOperationService implements CellOperation {
         String[] tokens = data.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
         Pattern cellIdPattern = Pattern.compile(CELL_ID_PATTERN);
         StringBuilder finalExpression = new StringBuilder();
+        // Introduce a Map to cache evaluated cell values
+        Map<String, String> evaluatedValues = new HashMap<>();
 
         for (String token : tokens) {
             Matcher cellIdMatcher = cellIdPattern.matcher(token);
             if (cellIdMatcher.matches()) {
-                Cell cell = cellRepository.findById(token)
-                        .orElseThrow(() -> new NoSuchElementException("Invalid Cell Id : Cell doesn't exist"));
-
-                String referenceExpression = cell.getData() != null ? evaluateExpression(cell.getData().replaceFirst("^=", "")) : "0.00";
-                finalExpression.append(referenceExpression);
+                String cellId = token;
+                // Check if the value for this cell ID is already cached
+                String evaluatedValue = evaluatedValues.get(cellId);
+                if (evaluatedValue == null) {
+                    Cell cell = cellRepository.findById(cellId).orElseThrow(() -> new NoSuchElementException("Invalid Cell Id : Cell doesn't exist"));
+                    evaluatedValue = evaluateExpression(cell.getData().replaceFirst("^=", ""));
+                    // Cache the evaluated value for future reference
+                    evaluatedValues.put(cellId, evaluatedValue);
+                }
+                finalExpression.append(evaluatedValue);
             } else {
                 finalExpression.append(token);
             }
         }
+        logger.info("Final Expression Generated: "+ finalExpression.toString());
         return finalExpression.toString();
     }
+
 
     String calculateExpressionValue(String expression) {
 

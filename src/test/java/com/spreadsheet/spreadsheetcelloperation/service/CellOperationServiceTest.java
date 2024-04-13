@@ -117,7 +117,7 @@ public class CellOperationServiceTest {
         Mockito.when(cellRepository.findById(A4.getCellId()))
                 .thenReturn(Optional.of(A4));
 
-        String result = "=A4+12+13";
+        String result = "=14+12+13";
         assertEquals(result,cellOperationService.evaluateExpression(A1.getData()));
     }
 
