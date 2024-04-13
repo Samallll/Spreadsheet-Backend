@@ -1,6 +1,9 @@
 package com.spreadsheet.spreadsheetcelloperation.service;
 
 import com.fathzer.soft.javaluator.DoubleEvaluator;
+import com.spreadsheet.spreadsheetcelloperation.exception.CircularDependencyException;
+import com.spreadsheet.spreadsheetcelloperation.exception.InvalidCellIdException;
+import com.spreadsheet.spreadsheetcelloperation.exception.SelfReferenceException;
 import com.spreadsheet.spreadsheetcelloperation.model.Cell;
 import com.spreadsheet.spreadsheetcelloperation.repository.CellRepository;
 import com.spreadsheet.spreadsheetcelloperation.utils.DependencyUtil;
@@ -41,7 +44,7 @@ public class CellOperationService implements CellOperation {
         String data = value.toString();
         List<Cell> dependencyList = new ArrayList<>();
         if(!cellId.matches(CELL_ID_PATTERN)) {
-            throw new NoSuchElementException("Invalid Cell Id");
+            throw new InvalidCellIdException("Invalid Cell Id provided");
         }
         if(data.startsWith("=")){
             dependencyList = createDependencyListFromExpression(cellId, data.substring(1));
@@ -73,7 +76,7 @@ public class CellOperationService implements CellOperation {
     private List<Cell> createDependencyListFromExpression(String cellId, String data) {
 
         if(!cellId.matches(CELL_ID_PATTERN)) {
-            throw new NoSuchElementException("Invalid Cell Id");
+            throw new InvalidCellIdException("Invalid Cell Id provided");
         }
         List<Cell> dependencyList = new ArrayList<>();
         String[] tokens = data.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
@@ -82,7 +85,7 @@ public class CellOperationService implements CellOperation {
             Matcher cellIdMatcher = cellIdPattern.matcher(token);
             if (cellIdMatcher.matches()) {
                 if(cellId.equals(token.toUpperCase())){
-                    throw new IllegalStateException("Reference Error - Referring to Same element");
+                    throw new SelfReferenceException("Reference Error : Referring to Same Cell Id");
                 }
                 Cell cell = cellRepository.findById(token.toUpperCase()).orElseGet(
                         () -> {
@@ -100,12 +103,12 @@ public class CellOperationService implements CellOperation {
     public String getCellValue(String cellId) {
 
         if(!cellId.matches(CELL_ID_PATTERN)) {
-            throw new NoSuchElementException("Invalid Cell Id");
+            throw new InvalidCellIdException("Invalid Cell Id provided");
         }
         Cell cell = cellRepository.findById(cellId)
-                .orElseThrow(() -> new NoSuchElementException("Cell Id does not exist"));
+                .orElseThrow(() -> new NoSuchElementException("Invalid Cell Id : Cell doesn't exist"));
         if(isCircularDependent(cell)){
-            throw new IllegalStateException("Circular Dependency Found");
+            throw new CircularDependencyException("Reference Error : Circular Dependency Found");
         }
         String result;
         if(cell.getData().startsWith("=")){
@@ -133,7 +136,7 @@ public class CellOperationService implements CellOperation {
             Matcher cellIdMatcher = cellIdPattern.matcher(token);
             if (cellIdMatcher.matches()) {
                 Cell cell = cellRepository.findById(token)
-                        .orElseThrow(() -> new NoSuchElementException("Reference Error - No such element"));
+                        .orElseThrow(() -> new NoSuchElementException("Invalid Cell Id : Cell doesn't exist"));
 
                 String referenceExpression = cell.getData() != null ? evaluateExpression(cell.getData().replaceFirst("^=", "")) : "0.00";
                 finalExpression.append(referenceExpression);
