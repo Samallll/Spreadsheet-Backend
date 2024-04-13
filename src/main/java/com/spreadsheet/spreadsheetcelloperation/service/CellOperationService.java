@@ -36,7 +36,7 @@ public class CellOperationService implements CellOperation {
      *
      * @param cellId The ID of the cell.
      * @param value  The new value of the cell.
-     * @throws NoSuchElementException if the cell ID is invalid.
+     * @throws InvalidCellIdException if the cell ID is invalid.
      */
     @Override
     @Transactional
@@ -71,8 +71,8 @@ public class CellOperationService implements CellOperation {
      * @param cellId The ID of the cell for which dependencies are being created.
      * @param data   The expression data containing cell references.
      * @return A list of cells that the given cell depends on.
-     * @throws IllegalStateException for cells referring to the same cell.
-     * @throws NoSuchElementException for invalid cellId
+     * @throws SelfReferenceException for cells referring to the same cell.
+     * @throws InvalidCellIdException for invalid cellId
      */
     private List<Cell> createDependencyListFromExpression(String cellId, String data) {
 
