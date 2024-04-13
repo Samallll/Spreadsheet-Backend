@@ -127,4 +127,37 @@ public class CellOperationServiceTest {
         Cell A1 = new Cell("A1","=A5+A2+A3");
         assertThrows(NoSuchElementException.class,()->cellOperationService.evaluateExpression(A1.getData()));
     }
+
+    @Test
+    void shouldCreateDependencyListFromExpression(){
+
+        Cell A1 = new Cell("A1","=A2+A3");
+        Cell A2 = new Cell("A2","=12");
+        Cell A3 = new Cell("A3","=13");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+        dependencyList.add(A3);
+
+        A1.setDependentCells(dependencyList);
+
+        Mockito.when(cellRepository.findById(A1.getCellId()))
+                .thenReturn(Optional.of(A1));
+        Mockito.when(cellRepository.findById(A2.getCellId()))
+                .thenReturn(Optional.of(A2));
+        Mockito.when(cellRepository.findById(A3.getCellId()))
+                .thenReturn(Optional.of(A3));
+
+        assertEquals(dependencyList, cellOperationService.createDependencyListFromExpression(A1.getCellId(), A1.getData()));
+    }
+
+    @Test
+    void shouldThrowInvalidClientIdExceptionFrom_CreateDependencyListFromExpression(){
+
+        String cellId = "1";
+        String data = "test";
+
+        assertThrows(InvalidCellIdException.class, () -> cellOperationService.createDependencyListFromExpression(cellId,data));
+    }
+
 }
