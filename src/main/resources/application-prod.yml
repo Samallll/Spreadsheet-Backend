@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: spreadsheet-cell-operation
+  datasource:
+    url: jdbc:mysql://${DB_HOST}:3306/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        ddl-auto: update
+        format_sql: true

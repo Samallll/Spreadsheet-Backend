@@ -1,12 +1,4 @@
 spring:
   profiles:
-    active: dev
-  application:
-    name: spreadsheet-cell-operation
-  datasource:
-    url: jdbc:mysql://${DB_HOST}:3306/${DB_NAME}
-  jpa:
-    properties:
-      hibernate:
-        ddl-auto: update
-        format_sql: true
+    active: ${PROFILE:dev}
+
