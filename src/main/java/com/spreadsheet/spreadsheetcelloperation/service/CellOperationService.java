@@ -144,7 +144,6 @@ public class CellOperationService implements CellOperation {
                 finalExpression.append(token);
             }
         }
-        logger.info("Final Expression Generated: "+ finalExpression.toString());
         return finalExpression.toString();
     }
 

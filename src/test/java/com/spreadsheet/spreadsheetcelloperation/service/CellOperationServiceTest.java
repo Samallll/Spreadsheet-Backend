@@ -10,6 +10,7 @@ import org.mockito.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -50,9 +51,9 @@ public class CellOperationServiceTest {
     void shouldNotBeCircularDependent(){
 
         Cell A1 = new Cell("A1","=A4+A2+A3");
-        Cell A2 = new Cell("A1","=12");
-        Cell A3 = new Cell("A1","=13");
-        Cell A4 = new Cell("A1","=14");
+        Cell A2 = new Cell("A2","=12");
+        Cell A3 = new Cell("A3","=13");
+        Cell A4 = new Cell("A4","=14");
 
         List<Cell> dependencyList = new ArrayList<>();
         dependencyList.add(A2);
@@ -90,5 +91,40 @@ public class CellOperationServiceTest {
 
         assertEquals(true,cellOperationService.isCircularDependent(A1));
 
+    }
+
+    @Test
+    void shouldEvaluateExpressionToGenerateFinalExpression(){
+
+        Cell A1 = new Cell("A1","=A4+A2+A3");
+        Cell A2 = new Cell("A2","=12");
+        Cell A3 = new Cell("A3","=13");
+        Cell A4 = new Cell("A4","=14");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+        dependencyList.add(A3);
+        dependencyList.add(A4);
+
+        A1.setDependentCells(dependencyList);
+
+        Mockito.when(cellRepository.findById(A1.getCellId()))
+                .thenReturn(Optional.of(A1));
+        Mockito.when(cellRepository.findById(A2.getCellId()))
+                .thenReturn(Optional.of(A2));
+        Mockito.when(cellRepository.findById(A3.getCellId()))
+                .thenReturn(Optional.of(A3));
+        Mockito.when(cellRepository.findById(A4.getCellId()))
+                .thenReturn(Optional.of(A4));
+
+        String result = "=A4+12+13";
+        assertEquals(result,cellOperationService.evaluateExpression(A1.getData()));
+    }
+
+    @Test
+    void shouldThrowNoSuchElementExceptionFromEvaluateExpression(){
+
+        Cell A1 = new Cell("A1","=A5+A2+A3");
+        assertThrows(NoSuchElementException.class,()->cellOperationService.evaluateExpression(A1.getData()));
     }
 }
