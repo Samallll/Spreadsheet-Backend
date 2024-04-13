@@ -2,6 +2,7 @@ package com.spreadsheet.spreadsheetcelloperation.service;
 
 import com.spreadsheet.spreadsheetcelloperation.exception.ExpressionEvaluationException;
 import com.spreadsheet.spreadsheetcelloperation.exception.InvalidCellIdException;
+import com.spreadsheet.spreadsheetcelloperation.exception.SelfReferenceException;
 import com.spreadsheet.spreadsheetcelloperation.model.Cell;
 import com.spreadsheet.spreadsheetcelloperation.repository.CellRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,7 @@ public class CellOperationServiceTest {
         MockitoAnnotations.openMocks(this);
     }
 
+    // Unit Test ***
     @Test
     void shouldThrowExceptionCalculateExpression(){
 
@@ -158,6 +160,146 @@ public class CellOperationServiceTest {
         String data = "test";
 
         assertThrows(InvalidCellIdException.class, () -> cellOperationService.createDependencyListFromExpression(cellId,data));
+    }
+
+    // Integration Test ***
+    @Test
+    void shouldSaveDataInDatabase() {
+
+        String cellId = "Z2";
+        Object value = 123;
+        Cell createdCell = new Cell(cellId, value.toString());
+
+        Mockito.when(cellRepository.findById(cellId.toUpperCase())).thenReturn(Optional.of(createdCell));
+        cellOperationService.setCellValue(cellId, value);
+        verify(cellRepository, atLeastOnce()).save(createdCell);
+
+        String cellId1 = "Z2";
+        Object value1 = -123.89;
+        Cell createdCell1 = new Cell(cellId1, value1.toString());
+
+        Mockito.when(cellRepository.findById(cellId.toUpperCase())).thenReturn(Optional.of(createdCell1));
+        cellOperationService.setCellValue(cellId, value);
+        verify(cellRepository, atLeastOnce()).save(createdCell);
+    }
+
+    @Test
+    void shouldThrowExceptionForInvalidClientId() {
+
+        String cellId = "1";
+        Object value = 123;
+
+        assertThrows(InvalidCellIdException.class, () -> cellOperationService.setCellValue(cellId, value));
+    }
+
+    @Test
+    void getValueForReferencedExpressionWithActualValue(){
+
+        Cell A1 = new Cell("A1","=12+A2");
+        Cell A2 = new Cell("A2","=12");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+
+        A1.setDependentCells(dependencyList);
+
+        Mockito.when(cellRepository.findById(A1.getCellId()))
+                .thenReturn(Optional.of(A1));
+        Mockito.when(cellRepository.findById(A2.getCellId()))
+                .thenReturn(Optional.of(A2));
+
+        assertEquals("24.0",cellOperationService.getCellValue(A1.getCellId()));
+    }
+
+    @Test
+    void getValueForReferencedExpression(){
+
+        Cell A1 = new Cell("A1","=A2");
+        Cell A2 = new Cell("A2","=-12.0");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+
+        A1.setDependentCells(dependencyList);
+
+        Mockito.when(cellRepository.findById(A1.getCellId()))
+                .thenReturn(Optional.of(A1));
+        Mockito.when(cellRepository.findById(A2.getCellId()))
+                .thenReturn(Optional.of(A2));
+
+        assertEquals("-12.0",cellOperationService.getCellValue(A1.getCellId()));
+    }
+
+    @Test
+    void getValueForCombinationOfParenthesisAndReference(){
+
+        Cell A1 = new Cell("A1","=A4-(A2+A3)");
+        Cell A2 = new Cell("A2","12");
+        Cell A3 = new Cell("A3","13");
+        Cell A4 = new Cell("A4","14");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+        dependencyList.add(A3);
+        dependencyList.add(A4);
+
+        A1.setDependentCells(dependencyList);
+
+        Mockito.when(cellRepository.findById(A1.getCellId()))
+                .thenReturn(Optional.of(A1));
+        Mockito.when(cellRepository.findById(A2.getCellId()))
+                .thenReturn(Optional.of(A2));
+        Mockito.when(cellRepository.findById(A3.getCellId()))
+                .thenReturn(Optional.of(A3));
+        Mockito.when(cellRepository.findById(A4.getCellId()))
+                .thenReturn(Optional.of(A4));
+
+        assertEquals("-11.0",cellOperationService.getCellValue(A1.getCellId()));
+    }
+
+    @Test
+    void getValue_ThrowExpressionEvaluationExceptionForExpression(){
+
+        Cell A1 = new Cell("A1","=A4-(A2+A3(");
+        Cell A2 = new Cell("A2","12");
+        Cell A3 = new Cell("A3","13");
+        Cell A4 = new Cell("A4","14");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+        dependencyList.add(A3);
+        dependencyList.add(A4);
+
+        A1.setDependentCells(dependencyList);
+
+        Mockito.when(cellRepository.findById(A1.getCellId()))
+                .thenReturn(Optional.of(A1));
+        Mockito.when(cellRepository.findById(A2.getCellId()))
+                .thenReturn(Optional.of(A2));
+        Mockito.when(cellRepository.findById(A3.getCellId()))
+                .thenReturn(Optional.of(A3));
+        Mockito.when(cellRepository.findById(A4.getCellId()))
+                .thenReturn(Optional.of(A4));
+
+        assertThrows(ExpressionEvaluationException.class,() ->cellOperationService.getCellValue(A1.getCellId()));
+    }
+
+    @Test
+    void getValue_ThrowInvalidCellIdException(){
+
+        Cell A1 = new Cell("1","=A4-(A2+A3)");
+        Cell A2 = new Cell("A2","12");
+        Cell A3 = new Cell("A3","13");
+        Cell A4 = new Cell("A4","14");
+
+        List<Cell> dependencyList = new ArrayList<>();
+        dependencyList.add(A2);
+        dependencyList.add(A3);
+        dependencyList.add(A4);
+
+        A1.setDependentCells(dependencyList);
+
+        assertThrows(InvalidCellIdException.class,() ->cellOperationService.getCellValue(A1.getCellId()));
     }
 
 }

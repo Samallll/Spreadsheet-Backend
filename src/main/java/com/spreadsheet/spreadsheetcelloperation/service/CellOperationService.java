@@ -151,7 +151,6 @@ public class CellOperationService implements CellOperation {
                 finalExpression.append(token);
             }
         }
-        logger.info("Final Expression Generated: "+ finalExpression.toString());
         return finalExpression.toString();
     }
 
@@ -171,7 +170,7 @@ public class CellOperationService implements CellOperation {
     Boolean isCircularDependent(Cell cell) {
 
         if(cell == null){
-            return null;
+            return false;
         }
         List<Cell> dependentList = cell.getDependentCells();
         Set<Cell> visited = new HashSet<>();
