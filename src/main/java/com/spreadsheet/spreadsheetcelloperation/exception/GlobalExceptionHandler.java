@@ -30,4 +30,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleSelfReferenceException(SelfReferenceException selfReferenceException){
         return new ResponseEntity<>(selfReferenceException.getErrorMessage(),HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(ExpressionEvaluationException.class)
+    public ResponseEntity<String> handleExpressionEvaluationException(ExpressionEvaluationException evaluationException){
+        return new ResponseEntity<>(evaluationException.getErrorMessage(),HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+
 }

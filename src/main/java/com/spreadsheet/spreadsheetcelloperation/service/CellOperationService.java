@@ -2,6 +2,7 @@ package com.spreadsheet.spreadsheetcelloperation.service;
 
 import com.fathzer.soft.javaluator.DoubleEvaluator;
 import com.spreadsheet.spreadsheetcelloperation.exception.CircularDependencyException;
+import com.spreadsheet.spreadsheetcelloperation.exception.ExpressionEvaluationException;
 import com.spreadsheet.spreadsheetcelloperation.exception.InvalidCellIdException;
 import com.spreadsheet.spreadsheetcelloperation.exception.SelfReferenceException;
 import com.spreadsheet.spreadsheetcelloperation.model.Cell;
@@ -150,9 +151,14 @@ public class CellOperationService implements CellOperation {
 
     private String calculateExpressionValue(String expression) {
 
-        DoubleEvaluator evaluator = new DoubleEvaluator();
-        Double answer = evaluator.evaluate(expression);
-        return answer.toString();
+        try{
+            DoubleEvaluator evaluator = new DoubleEvaluator();
+            Double answer = evaluator.evaluate(expression);
+            return answer.toString();
+        }
+        catch(RuntimeException e){
+            throw new ExpressionEvaluationException("Error evaluating expression: "+ e.getMessage());
+        }
     }
 
     private Boolean isCircularDependent(Cell cell) {
