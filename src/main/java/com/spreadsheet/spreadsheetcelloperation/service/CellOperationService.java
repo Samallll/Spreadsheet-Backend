@@ -62,7 +62,6 @@ public class CellOperationService implements CellOperation {
         cell.setData(data);
         cell.setDependentCells(dependencyList);
         cellRepository.save(cell);
-        logger.info("Existing cell updated, Cell Id: "+ cell.getCellId());
     }
 
     /**
@@ -74,7 +73,7 @@ public class CellOperationService implements CellOperation {
      * @throws SelfReferenceException for cells referring to the same cell.
      * @throws InvalidCellIdException for invalid cellId
      */
-    private List<Cell> createDependencyListFromExpression(String cellId, String data) {
+    List<Cell> createDependencyListFromExpression(String cellId, String data) {
 
         if(!cellId.matches(CELL_ID_PATTERN)) {
             throw new InvalidCellIdException("Invalid Cell Id provided");
@@ -128,7 +127,7 @@ public class CellOperationService implements CellOperation {
      * @throws NoSuchElementException cell Id represents which doesn't exist
      * @return final expression which can be evaluated by an expression evaluator.
      */
-    public String evaluateExpression(String data) {
+    String evaluateExpression(String data) {
         String[] tokens = data.split("(?=[+\\-*/()])|(?<=[+\\-*/()])");
         Pattern cellIdPattern = Pattern.compile(CELL_ID_PATTERN);
         StringBuilder finalExpression = new StringBuilder();
@@ -149,7 +148,7 @@ public class CellOperationService implements CellOperation {
         return finalExpression.toString();
     }
 
-    private String calculateExpressionValue(String expression) {
+    String calculateExpressionValue(String expression) {
 
         try{
             DoubleEvaluator evaluator = new DoubleEvaluator();
@@ -161,7 +160,7 @@ public class CellOperationService implements CellOperation {
         }
     }
 
-    private Boolean isCircularDependent(Cell cell) {
+    Boolean isCircularDependent(Cell cell) {
 
         List<Cell> dependentList = cell.getDependentCells();
         Set<Cell> visited = new HashSet<>();
